@@ -1,3 +1,5 @@
+from main import *
+
 def main():
     """Main Streamlit application"""
     
