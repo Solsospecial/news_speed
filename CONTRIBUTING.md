@@ -22,8 +22,8 @@ Click the **Fork** button at the top right of the **GitHub** page.
 
 ### 2️⃣ Clone your fork
 ```bash
-git clone https://github.com/yourusername/NewsSpeed
-cd NewsSpeed
+git clone https://github.com/PrincessNosawema/news_speed
+cd news_speed
 ```
 ### 3️⃣ Create a virtual environment
 ```bash
