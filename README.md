@@ -82,8 +82,8 @@ root/
 
 ### 1️⃣ Clone the repository
 ```bash
-git clone https://github.com/yourusername/newsspeed.git
-cd newsspeed
+git clone https://github.com/PrincessNosawema/news_speed
+cd news_speed
 ```
 ### 2️⃣ Create & activate a virtual environment (recommended)
 ```bash
