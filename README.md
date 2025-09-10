@@ -174,11 +174,3 @@ ___
 ## 📜 License
 
 This project is licensed under the MIT License.
-
-___
-
-## 📬 Contact
-
-### For inquiries or feature requests:
-- **Email:** # Placeholder
-- **LinkedIn:** # Placeholder
