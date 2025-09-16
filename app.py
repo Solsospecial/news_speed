@@ -9,6 +9,7 @@ from news_speed.exporter import DataExporter
 # Sets up the Streamlit interface, collects and filters news articles,
 # performs sentiment and keyword analysis, generates visualizations,
 # and provides data export options.
+
 def main():
 	"""Main Streamlit application"""
 	
@@ -46,10 +47,15 @@ def main():
 		border-left: 4px solid #667eea;
 		color: #ffffff;
 		transition: background 0.3s ease;
+		cursor: pointer;
 	}
 
 	.metric-card:hover {
 		background: #2a2a2a;
+	}
+
+	.metric-card:hover .source-text {
+		text-decoration: underline;
 	}
 
 	</style>
@@ -204,11 +210,16 @@ def main():
 				}.get(row['sentiment_label'], 'gray')
 				
 				st.markdown(f"""
-				<div class="metric-card">
-					<h4>{row['title']}</h4>
-					<p><strong>Source:</strong> {row['source']} | 
-					<strong>Sentiment:</strong> <span style="color: {sentiment_color}">{row['sentiment_label']}</span></p>
-				</div>
+				<a href="{row['link']}" target="_blank" style="text-decoration: none; color: inherit;">
+					<div class="metric-card">
+						<h4>{row['title']}</h4>
+						<p><strong>Source:</strong> 
+							<span class="source-text">{row['source']}</span> | 
+							<strong>Sentiment:</strong>
+							<span style="color: {sentiment_color}">{row['sentiment_label']}</span>
+						</p>
+					</div>
+				</a>
 				""", unsafe_allow_html=True)
 				st.markdown("<br>", unsafe_allow_html=True)
 		

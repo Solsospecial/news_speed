@@ -111,7 +111,7 @@ Run the Streamlit app:
 streamlit run app.py
 ```
 By default, Streamlit will launch a local server at:
-http://localhost:850
+http://localhost:8501
 
 ___
 
@@ -131,7 +131,7 @@ ___
 ## 📊 Output
 
 - **Overview Tab**
-  - Headlines with source and sentiment label
+  - Headlines with source and sentiment label (linked to full article)
   - Sentiment metrics: Total articles, % Positive/Neutral/Negative, Ratio, Top source
 
 - **Visualizations Tab**
