@@ -337,7 +337,7 @@ def main():
 							
 	else:
 		# If nothing searched yet, show the header/info only
-		st.info("Use the sidebar to configure a search, then click 🚀 **Analyze News**")
+		st.info("Use the sidebar to configure a search, then click: 🚀 **Analyze News**")
 
 	# Footer
 	st.markdown("---")
