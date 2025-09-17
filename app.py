@@ -278,7 +278,7 @@ def main():
 				keyword_df_display.index = keyword_df_display.index + 1  # shift to 1..N
 				keyword_df_display.index.name = 'No.'
 				
-				st.dataframe(keyword_df, use_container_width=True)
+				st.dataframe(keyword_df_display, use_container_width=True)
 			
 			with tab4:
 				st.header("Raw Data")
@@ -295,7 +295,7 @@ def main():
 					display_df.index = display_df.index + 1               # shift to 1..N
 					display_df.index.name = 'No.'
 					
-					st.dataframe(df[show_columns], use_container_width=True)
+					st.dataframe(display_df, use_container_width=True)
 			
 			with tab5:
 				st.header("Export Data")
