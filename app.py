@@ -54,6 +54,7 @@ def main():
 		background: #2a2a2a;
 	}
 
+	.metric-card:hover h4,
 	.metric-card:hover .source-text {
 		text-decoration: underline;
 	}
@@ -69,7 +70,7 @@ def main():
 	</div>
 	""", unsafe_allow_html=True)
 	
-	# Initialize components
+	# Initialize analyzers
 	collector, analyzer, summarizer, visualizer = get_analyzers()
 	
 	# Sidebar configuration
@@ -115,6 +116,10 @@ def main():
 	colormap = st.sidebar.selectbox("WordCloud Color Scheme", 
 								   options=['viridis', 'plasma', 'inferno', 'magma', 'Blues'])
 	
+	# Session state management
+	if 'search_done' not in st.session_state:
+		st.session_state['search_done'] = False
+	
 	# Main content
 	if st.sidebar.button("🚀 Analyze News", type="primary"):
 		
@@ -159,164 +164,181 @@ def main():
 		sentiment_df = pd.DataFrame(sentiment_results)
 		df = pd.concat([df.reset_index(drop=True), sentiment_df.reset_index(drop=True)], axis=1)
 		
-		# Display metrics
-		col1, col2, col3, col4, col5, col6 = st.columns(6)
+		# Mark analysis as complete and update session state
+		st.session_state['search_done'] = True
 		
-		sentiment_counts = df['sentiment_label'].value_counts()
-		total_articles = len(df)
-
-		with col1:
-			st.metric("Total Articles", total_articles)
-		
-		with col2:
-			positive_pct = (sentiment_counts.get('positive', 0) / total_articles) * 100
-			st.metric("Positive %", f"{positive_pct:.1f}%")
-
-		with col3:
-			neutral_pct = (sentiment_counts.get('neutral', 0) / total_articles) * 100
-			st.metric("Neutral %", f"{neutral_pct:.1f}%")
-
-		with col4:
-			negative_pct = (sentiment_counts.get('negative', 0) / total_articles) * 100
-			st.metric("Negative %", f"{negative_pct:.1f}%")
-		
-		if negative_pct > 0:
-			with col5:
-				ratio = positive_pct / negative_pct
-				st.metric("Positive-to-Negative Ratio", f"{ratio:.2f}")
+		# If analysis is complete:
+		if st.session_state['search_done']:
+			# Display metrics
+			col1, col2, col3, col4, col5, col6 = st.columns(6)
 			
-		with col6:
-			top_source = df['source'].value_counts().index[0] if total_articles > 0 else "N/A"
-			st.metric("Top Source", top_source)
-		
-		# Capitalize the first letter of each sentiment label (e.g., 'positive' → 'Positive') before proceeding
-		df['sentiment_label'] = df['sentiment_label'].str.capitalize()
-		
-		# Tabs for different views
-		tab1, tab2, tab3, tab4, tab5 = st.tabs(["📰 Overview", "🎨 Visualizations", "📝 Summary", "📋 Data", "💾 Export"])
-		
-		with tab1:
-			# Convert input to integer if it's a digit-only string (e.g., "50"); otherwise, use total_articles as fallback
-			max_headlines = int(max_headlines.strip()) if max_headlines.strip().isdigit() else total_articles
-			displayable_headlines = min(max_headlines, total_articles)
-			st.header(f"Headlines | {displayable_headlines}")
-			
-			# Display headlines with sentiment
-			for _, row in df.iterrows():
-				sentiment_color = {
-					'Positive': 'green', 
-					'Neutral': 'white',
-					'Negative': 'red'
-				}.get(row['sentiment_label'], 'gray')
-				
-				st.markdown(f"""
-				<a href="{row['link']}" target="_blank" style="text-decoration: none; color: inherit;">
-					<div class="metric-card">
-						<h4>{row['title']}</h4>
-						<p><strong>Source:</strong> 
-							<span class="source-text">{row['source']}</span> | 
-							<strong>Sentiment:</strong>
-							<span style="color: {sentiment_color}">{row['sentiment_label']}</span>
-						</p>
-					</div>
-				</a>
-				""", unsafe_allow_html=True)
-				st.markdown("<br>", unsafe_allow_html=True)
-		
-		with tab2:
-			st.header("Data Visualizations")
-			
-			col, = st.columns(1)
-			
-			with col:
-				# Sentiment distribution
-				fig_sentiment = visualizer.plot_sentiment_distribution(df['sentiment_label'])
-				st.plotly_chart(fig_sentiment, use_container_width=True)
-			
-			# Word cloud
-			st.subheader("Word Cloud")
-			
-			exclude_words = {w.strip() for w in exclude_words.split(',') if w.strip()}
-			wordcloud = visualizer.create_wordcloud(df['title'].tolist(), 
-												   exclude_words=exclude_words,
-												   colormap=colormap)
-			
-			if wordcloud:
-				fig, ax = plt.subplots(figsize=(12, 6))
-				ax.imshow(wordcloud, interpolation='bilinear')
-				ax.axis('off')
-				st.pyplot(fig)
-			else:
-				st.warning("Could not generate word cloud")
-		
-		with tab3:
-			st.header("AI-Generated Summary")
-			
-			if summarizer.available:
-				with st.spinner("Generating summary..."):
-					summary = summarizer.summarize_headlines(df['title'].tolist())
-					st.info(summary)
-			else:
-				st.warning("Summary feature not available")
-			
-			# Top keywords
-			top_keywords = generate_keyword_analysis(df['title'].tolist(), exclude_words)
-			st.subheader(f"Top {len(top_keywords)} Keywords")
-			
-			keyword_df = pd.DataFrame(top_keywords, columns=['Keyword', 'Frequency'])
-			st.dataframe(keyword_df, use_container_width=True)
-		
-		with tab4:
-			st.header("Raw Data")
-			
-			# Display options
-			show_columns = st.multiselect(
-				"Select columns to display",
-				options=df.columns.tolist(),
-				default=['title', 'source', 'sentiment_label']
-			)
-			
-			if show_columns:
-				st.dataframe(df[show_columns], use_container_width=True)
-		
-		with tab5:
-			st.header("Export Data")
-			
-			col1, col2, col3 = st.columns(3)
-			
-			file_name = f"newsspeed_data_{datetime.utcnow().strftime('%Y%m%d_%H%M')}-UTC"
+			sentiment_counts = df['sentiment_label'].value_counts()
+			total_articles = len(df)
+	
 			with col1:
-				# CSV Export
-				csv_data = DataExporter.to_csv(df)
-				st.download_button(
-					label="📄 Download CSV",
-					data=csv_data,
-					file_name=f"{file_name}.csv",
-					mime="text/csv"
-				)
+				st.metric("Total Articles", total_articles)
 			
 			with col2:
-				# JSON Export
-				json_data = DataExporter.to_json(df)
-				st.download_button(
-					label="📋 Download JSON",
-					data=json_data,
-					file_name=f"{file_name}.json",
-					mime="application/json"
-				)
-			
-			with col3:
-				# WordCloud PNG Export
-				if 'wordcloud' in locals() and wordcloud:
-					png_data = DataExporter.wordcloud_to_png(wordcloud)
-					if png_data:
-						st.download_button(
-							label="🖼️ Download WordCloud",
-							data=png_data,
-							file_name=f"{file_name}.png",
-							mime="image/png"
-						)
+				positive_pct = (sentiment_counts.get('positive', 0) / total_articles) * 100
+				st.metric("Positive %", f"{positive_pct:.1f}%")
 	
+			with col3:
+				neutral_pct = (sentiment_counts.get('neutral', 0) / total_articles) * 100
+				st.metric("Neutral %", f"{neutral_pct:.1f}%")
+	
+			with col4:
+				negative_pct = (sentiment_counts.get('negative', 0) / total_articles) * 100
+				st.metric("Negative %", f"{negative_pct:.1f}%")
+			
+			if negative_pct > 0:
+				with col5:
+					ratio = positive_pct / negative_pct
+					st.metric("Positive-to-Negative Ratio", f"{ratio:.2f}")
+				
+			with col6:
+				top_source = df['source'].value_counts().index[0] if total_articles > 0 else "N/A"
+				st.metric("Top Source", top_source)
+			
+			# Capitalize the first letter of each sentiment label (e.g., 'positive' → 'Positive') before proceeding
+			df['sentiment_label'] = df['sentiment_label'].str.capitalize()
+			
+			# Tabs for different views
+			tab1, tab2, tab3, tab4, tab5 = st.tabs(["📰 Overview", "🎨 Visualizations", "📝 Summary", "📋 Data", "💾 Export"])
+			
+			with tab1:
+				# Convert input to integer if it's a digit-only string (e.g., "50"); otherwise, use total_articles as fallback
+				max_headlines = int(max_headlines.strip()) if max_headlines.strip().isdigit() else total_articles
+				displayable_headlines = min(max_headlines, total_articles)
+				st.header(f"Headlines | {displayable_headlines}")
+				
+				# Display headlines with sentiment
+				for _, row in df.iterrows():
+					sentiment_color = {
+						'Positive': 'green', 
+						'Neutral': 'white',
+						'Negative': 'red'
+					}.get(row['sentiment_label'], 'gray')
+					
+					st.markdown(f"""
+					<a href="{row['link']}" target="_blank" style="text-decoration: none; color: inherit;">
+						<div class="metric-card">
+							<h4>{row['title']}</h4>
+							<p><strong>Source:</strong> 
+								<span class="source-text">{row['source']}</span> | 
+								<strong>Sentiment:</strong>
+								<span style="color: {sentiment_color}">{row['sentiment_label']}</span>
+							</p>
+						</div>
+					</a>
+					""", unsafe_allow_html=True)
+					st.markdown("<br>", unsafe_allow_html=True)
+			
+			with tab2:
+				st.header("Data Visualizations")
+				
+				col, = st.columns(1)
+				
+				with col:
+					# Sentiment distribution
+					fig_sentiment = visualizer.plot_sentiment_distribution(df['sentiment_label'])
+					st.plotly_chart(fig_sentiment, use_container_width=True)
+				
+				# Word cloud
+				st.subheader("Word Cloud")
+				
+				exclude_words = {w.strip() for w in exclude_words.split(',') if w.strip()}
+				wordcloud = visualizer.create_wordcloud(df['title'].tolist(), 
+													   exclude_words=exclude_words,
+													   colormap=colormap)
+				
+				if wordcloud:
+					fig, ax = plt.subplots(figsize=(12, 6))
+					ax.imshow(wordcloud, interpolation='bilinear')
+					ax.axis('off')
+					st.pyplot(fig)
+				else:
+					st.warning("Could not generate word cloud")
+			
+			with tab3:
+				st.header("AI-Generated Summary")
+				
+				if summarizer.available:
+					with st.spinner("Generating summary..."):
+						summary = summarizer.summarize_headlines(df['title'].tolist())
+						st.info(summary)
+				else:
+					st.warning("Summary feature not available")
+				
+				# Top keywords
+				top_keywords = generate_keyword_analysis(df['title'].tolist(), exclude_words)
+				st.subheader(f"Top {len(top_keywords)} Keywords")
+				
+				keyword_df = pd.DataFrame(top_keywords, columns=['Keyword', 'Frequency'])
+				keyword_df_display = keyword_df.reset_index(drop=True)   # ensure sequential 0..N-1
+				keyword_df_display.index = keyword_df_display.index + 1  # shift to 1..N
+				keyword_df_display.index.name = 'No.'
+				
+				st.dataframe(keyword_df, use_container_width=True)
+			
+			with tab4:
+				st.header("Raw Data")
+				
+				# Display options
+				show_columns = st.multiselect(
+					"Select columns to display",
+					options=df.columns.tolist(),
+					default=['title', 'source', 'sentiment_label']
+				)
+				
+				if show_columns:
+					display_df = df[show_columns].reset_index(drop=True)  # get fresh 0..N-1 index
+					display_df.index = display_df.index + 1               # shift to 1..N
+					display_df.index.name = 'No.'
+					
+					st.dataframe(df[show_columns], use_container_width=True)
+			
+			with tab5:
+				st.header("Export Data")
+				
+				col1, col2, col3 = st.columns(3)
+				
+				file_name = f"newsspeed_data_{datetime.utcnow().strftime('%Y%m%d_%H%M')}-UTC"
+				with col1:
+					# CSV Export
+					csv_data = DataExporter.to_csv(df)
+					st.download_button(
+						label="📄 Download CSV",
+						data=csv_data,
+						file_name=f"{file_name}.csv",
+						mime="text/csv"
+					)
+				
+				with col2:
+					# JSON Export
+					json_data = DataExporter.to_json(df)
+					st.download_button(
+						label="📋 Download JSON",
+						data=json_data,
+						file_name=f"{file_name}.json",
+						mime="application/json"
+					)
+				
+				with col3:
+					# WordCloud PNG Export
+					if 'wordcloud' in locals() and wordcloud:
+						png_data = DataExporter.wordcloud_to_png(wordcloud)
+						if png_data:
+							st.download_button(
+								label="🖼️ Download WordCloud",
+								data=png_data,
+								file_name=f"{file_name}.png",
+								mime="image/png"
+							)
+							
+	else:
+		# If nothing searched yet, show the header/info only
+		st.info("Use the sidebar to configure a search, then click 🚀 **Analyze News**")
+
 	# Footer
 	st.markdown("---")
 	st.markdown("""
